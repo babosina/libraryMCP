@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 from typing import Optional
-from sqlalchemy import Date
-from datetime import date
+from sqlalchemy import Date, ForeignKey
+from datetime import date, timedelta
 
 
 class Base(DeclarativeBase):
@@ -28,3 +28,15 @@ class Member(Base):
     email: Mapped[str] = mapped_column(unique=True)
     joined_date: Mapped[date] = mapped_column(Date, default=date.today)
     is_active: Mapped[bool] = mapped_column(default=True)
+
+
+class Loan(Base):
+    __tablename__ = "loans"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id"))
+    borrowed_date: Mapped[date] = mapped_column(Date, default=date.today)
+    due_date: Mapped[date] = mapped_column(Date, default=lambda: date.today() + timedelta(days=14))
+    returned_date: Mapped[Optional[date]] = mapped_column(Date)
+    fine_amount: Mapped[Optional[float]]

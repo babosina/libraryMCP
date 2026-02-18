@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import date
+import re
 
 
 # ========== BOOK SCHEMAS ==========
@@ -36,7 +37,16 @@ class BookResponse(BookBase):
 # ========== MEMBER SCHEMAS ==========
 class MemberBase(BaseModel):
     name: str = Field(..., examples=["Bob Smith"])
-    email: EmailStr = Field(..., examples=["bob@example.com"])
+    email: str = Field(..., examples=["bob@example.com"])
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        # Basic email validation regex
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, v):
+            raise ValueError('Invalid email address')
+        return v
 
 
 class MemberCreate(MemberBase):

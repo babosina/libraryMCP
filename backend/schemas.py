@@ -31,3 +31,43 @@ class BookResponse(BookBase):
 
     class Config:
         from_attributes = True
+
+
+# ========== MEMBER SCHEMAS ==========
+class MemberBase(BaseModel):
+    name: str = Field(..., examples=["Bob Smith"])
+    email: EmailStr = Field(..., examples=["bob@example.com"])
+
+
+class MemberCreate(MemberBase):
+    pass
+
+
+class MemberResponse(MemberBase):
+    id: int
+    joined_date: date
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+# ========== LOAN SCHEMAS ==========
+class LoanBase(BaseModel):
+    book_id: int
+    member_id: int
+
+
+class LoanCreate(LoanBase):
+    pass
+
+
+class LoanResponse(LoanBase):
+    id: int
+    borrowed_date: date
+    due_date: date
+    returned_date: Optional[date] = None
+    fine_amount: Optional[float] = None
+
+    class Config:
+        from_attributes = True

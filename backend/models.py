@@ -29,6 +29,8 @@ class Member(Base):
     joined_date: Mapped[date] = mapped_column(Date, default=date.today)
     is_active: Mapped[bool] = mapped_column(default=True)
 
+    loans: Mapped[list["Loan"]] = relationship(back_populates="member")
+
 
 class Loan(Base):
     __tablename__ = "loans"
@@ -40,3 +42,5 @@ class Loan(Base):
     due_date: Mapped[date] = mapped_column(Date, default=lambda: date.today() + timedelta(days=14))
     returned_date: Mapped[Optional[date]] = mapped_column(Date)
     fine_amount: Mapped[Optional[float]]
+
+    member: Mapped["Member"] = relationship(back_populates="loans")

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 import re
 
@@ -57,9 +57,30 @@ class MemberResponse(MemberBase):
     id: int
     joined_date: date
     is_active: bool
+    loans: Optional[List["LoanResponse"]] = Field(default=None,
+                                                  description="Loan history (only included in detail view)")
+    active_loans_count: Optional[int] = Field(default=None, description="Number of currently active loans")
+    total_fines: Optional[float] = Field(default=None, description="Total outstanding fines")
 
     class Config:
         from_attributes = True
+
+
+class MemberUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        # Basic email validation regex
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, v):
+            raise ValueError('Invalid email address')
+        return v
 
 
 # ========== LOAN SCHEMAS ==========

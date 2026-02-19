@@ -3,8 +3,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from sqlalchemy.sql.coercions import expect
-
 from ..database import get_db
 from ..models import Book, Loan
 from ..schemas import BookCreate, BookUpdate, BookResponse

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Library – Books & Members</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 40px;
+            max-width: 900px;
+        }
+
+        section {
+            margin-bottom: 40px;
+        }
+
+        input {
+            margin-right: 8px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px;
+        }
+
+        th {
+            background: #f5f5f5;
+        }
+
+        button {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>📚 Library</h1>
+
+<!-- BOOKS -->
+<section>
+    <h2>Books</h2>
+
+    <h3>Add book</h3>
+    <input id="book-title" placeholder="Title">
+    <input id="book-author" placeholder="Author">
+    <input id="book-isbn" placeholder="ISBN">
+    <button onclick="createBook()">Add</button>
+
+    <h3>Books list</h3>
+    <button onclick="loadBooks()">Reload</button>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Available</th>
+            <th>Delete</th>
+        </tr>
+        </thead>
+        <tbody id="books"></tbody>
+    </table>
+</section>
+
+<!-- MEMBERS -->
+<section>
+    <h2>Members</h2>
+
+    <h3>Add member</h3>
+    <input id="member-name" placeholder="Name">
+    <input id="member-email" placeholder="Email">
+    <button onclick="createMember()">Add</button>
+
+    <h3>Members list</h3>
+    <button onclick="loadMembers()">Reload</button>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Active</th>
+            <th>Delete</th>
+        </tr>
+        </thead>
+        <tbody id="members"></tbody>
+    </table>
+</section>
+
+<script>
+	const API = 'http://localhost:8000';
+
+	/* ---------------- BOOKS ---------------- */
+
+	async function loadBooks() {
+		const res = await fetch(`${API}/books/`);
+		const books = await res.json();
+
+		const tbody = document.getElementById('books');
+		tbody.innerHTML = '';
+
+		books.forEach(b => {
+			const tr = document.createElement('tr');
+			tr.innerHTML = `
+      <td>${b.id}</td>
+      <td>${b.title}</td>
+      <td>${b.author}</td>
+      <td>${b.available_copies}</td>
+      <td><button onclick="deleteBook(${b.id})">❌</button></td>
+    `;
+			tbody.appendChild(tr);
+		});
+	}
+
+	async function createBook() {
+		const title = document.getElementById('book-title').value;
+		const author = document.getElementById('book-author').value;
+		const isbn = document.getElementById('book-isbn').value;
+
+		await fetch(`${API}/books/`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({title, author, isbn})
+		});
+
+		loadBooks();
+	}
+
+	async function deleteBook(id) {
+		await fetch(`${API}/books/${id}`, {method: 'DELETE'});
+		loadBooks();
+	}
+
+	/* ---------------- MEMBERS ---------------- */
+
+	async function loadMembers() {
+		const res = await fetch(`${API}/members/`);
+		const members = await res.json();
+
+		const tbody = document.getElementById('members');
+		tbody.innerHTML = '';
+
+		members.forEach(m => {
+			const tr = document.createElement('tr');
+			tr.innerHTML = `
+      <td>${m.id}</td>
+      <td>${m.name}</td>
+      <td>${m.email}</td>
+      <td>${m.is_active}</td>
+      <td><button onclick="deleteMember(${m.id})">❌</button></td>
+    `;
+			tbody.appendChild(tr);
+		});
+	}
+
+	async function createMember() {
+		const name = document.getElementById('member-name').value;
+		const email = document.getElementById('member-email').value;
+
+		await fetch(`${API}/members/`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({name, email})
+		});
+
+		loadMembers();
+	}
+
+	async function deleteMember(id) {
+		await fetch(`${API}/members/${id}`, {method: 'DELETE'});
+		loadMembers();
+	}
+
+	/* initial load */
+	loadBooks();
+	loadMembers();
+</script>
+
+</body>
+</html>

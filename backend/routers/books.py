@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from ..database import get_db
-from ..models import Book, Loan
 from ..schemas import BookCreate, BookUpdate, BookResponse
+from .. import crud
 
 router = APIRouter(prefix="/books", tags=["Books"])
 
@@ -26,23 +26,7 @@ def list_books(
     - **genre**: Filter books by genre (case-insensitive partial match)
     - **available_only**: If True, only return books with available_copies > 0
     """
-    query = db.query(Book)
-
-    # Apply filters conditionally
-    if title:
-        query = query.filter(Book.title.ilike(f"%{title}%"))
-
-    if author:
-        query = query.filter(Book.author.ilike(f"%{author}%"))
-
-    if genre:
-        query = query.filter(Book.genre.ilike(f"%{genre}%"))
-
-    if available_only:
-        query = query.filter(Book.available_copies > 0)
-
-    books = query.all()
-    return books
+    return crud.get_books(db, title=title, author=author, genre=genre, available_only=available_only)
 
 
 @router.get("/{book_id}", response_model=BookResponse)
@@ -52,17 +36,14 @@ def get_book(book_id: int, db: Session = Depends(get_db)):
 
     - **book_id**: The unique identifier of the book to retrieve.
     """
-    book = db.query(Book).filter(Book.id == book_id).first()
+    book = crud.get_book(db, book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     return book
 
 
 @router.post("/", response_model=BookResponse, status_code=status.HTTP_201_CREATED)
-def create_book(
-        book: BookCreate,
-        db: Session = Depends(get_db)
-):
+def create_book(book: BookCreate, db: Session = Depends(get_db)):
     """
     Add a new book to the catalog
 
@@ -75,84 +56,45 @@ def create_book(
     Returns the created book with its assigned ID and available_copies set to total_copies.
     Raises 409 Error if a book with the same ISBN already exists.
     """
-    # Check if the book with same ISBN already exists
-    existing_book = db.query(Book).filter(Book.isbn == book.isbn).first()
-    if existing_book:
-        raise HTTPException(status_code=409,
-                            detail=f"Book with ISBN {book.isbn} already exists"
-                            )
-
-    # Create a new book
-    # Set available_copies equal to total_copies initially
-    new_book = Book(
-        **book.model_dump(),
-        available_copies=book.total_copies
-    )
-
+    if crud.get_book_by_isbn(db, book.isbn):
+        raise HTTPException(status_code=409, detail=f"Book with ISBN {book.isbn} already exists")
     try:
-        db.add(new_book)
-        db.commit()
-        db.refresh(new_book)
-        return new_book
-    except IntegrityError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Database constraint violation. {e}"
-        )
-
-
-@router.put("/{book_id}", response_model=BookResponse,
-            status_code=status.HTTP_200_OK)
-def update_book(book_id: int,
-                book_update: BookUpdate,
-                db: Session = Depends(get_db)):
-    """
-    Update an existing book in the database by book_id.
-    """
-    book = db.query(Book).filter(Book.id == book_id).first()
-    if not book:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    update_data = book_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(book, key, value)
-    try:
-        db.commit()
-        db.refresh(book)
+        return crud.create_book(db, book)
     except IntegrityError as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Database constraint violation. {e}")
-    return book
 
 
-@router.delete("/{book_id}",
-               status_code=status.HTTP_200_OK)
+@router.put("/{book_id}", response_model=BookResponse, status_code=status.HTTP_200_OK)
+def update_book(book_id: int, book_update: BookUpdate, db: Session = Depends(get_db)):
+    """
+    Update an existing book in the database by book_id.
+    """
+    book = crud.get_book(db, book_id)
+    if not book:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    try:
+        return crud.update_book(db, book, book_update.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Database constraint violation. {e}")
+
+
+@router.delete("/{book_id}", status_code=status.HTTP_200_OK)
 def delete_book(book_id: int, db: Session = Depends(get_db)):
     """
     Delete a book from the database by book_id.
     """
-    book = db.query(Book).filter(Book.id == book_id).first()
+    book = crud.get_book(db, book_id)
     if not book:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Book with ID {book_id} not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with ID {book_id} not found")
 
-    active_loans = db.query(Loan).filter(
-        Loan.book_id == book_id,
-        Loan.returned_date.is_(None)
-    ).count()
-
-    if active_loans > 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Cannot delete book with active loans")
+    if crud.count_active_loans_for_book(db, book_id) > 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete book with active loans")
 
     try:
-        db.delete(book)
-        db.commit()
-        return {
-            "message": "Book deleted successfully"
-        }
+        crud.delete_book(db, book)
+        return {"message": "Book deleted successfully"}
     except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Database constraint violation. {e}")

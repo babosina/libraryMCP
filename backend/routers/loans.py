@@ -1,21 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 from datetime import date
 from typing import List
 
 from ..database import get_db
-from ..models import Book, Member, Loan
 from ..schemas import LoanCreate, LoanResponse
+from .. import crud
 
 router = APIRouter(prefix="/loans", tags=["Loans"])
 
 
 @router.post("/borrow", response_model=LoanResponse, status_code=status.HTTP_201_CREATED)
-def borrow_book(
-        loan: LoanCreate,
-        db: Session = Depends(get_db)
-):
+def borrow_book(loan: LoanCreate, db: Session = Depends(get_db)):
     """
     Borrow a book (creates a loan record).
 
@@ -27,61 +23,26 @@ def borrow_book(
     - Member must exist and be active
     - Member cannot borrow the same book twice simultaneously
     """
-    # Check if member exists and is active
-    member = db.query(Member).filter(Member.id == loan.member_id).first()
+    member = crud.get_member(db, loan.member_id)
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     if not member.is_active:
         raise HTTPException(status_code=400, detail="Member account is not active")
 
-    # Check if book exists
-    book = db.query(Book).filter(Book.id == loan.book_id).first()
+    book = crud.get_book(db, loan.book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
-
-    # Check if book has available copies
     if book.available_copies <= 0:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Book '{book.title}' has no available copies"
-        )
+        raise HTTPException(status_code=409, detail=f"Book '{book.title}' has no available copies")
 
-    # Check if member already has an active loan for this book
-    existing_loan = db.query(Loan).filter(
-        and_(
-            Loan.member_id == loan.member_id,
-            Loan.book_id == loan.book_id,
-            Loan.returned_date.is_(None)
-        )
-    ).first()
+    if crud.get_active_loan(db, loan.member_id, loan.book_id):
+        raise HTTPException(status_code=409, detail="Member already has an active loan for this book")
 
-    if existing_loan:
-        raise HTTPException(
-            status_code=409,
-            detail="Member already has an active loan for this book"
-        )
-
-    # Create the loan
-    new_loan = Loan(
-        book_id=loan.book_id,
-        member_id=loan.member_id
-    )
-
-    # Decrement available copies
-    book.available_copies -= 1
-
-    db.add(new_loan)
-    db.commit()
-    db.refresh(new_loan)
-
-    return new_loan
+    return crud.create_loan(db, book=book, member_id=loan.member_id)
 
 
 @router.post("/return", response_model=LoanResponse)
-def return_book(
-        loan: LoanCreate,
-        db: Session = Depends(get_db)
-):
+def return_book(loan: LoanCreate, db: Session = Depends(get_db)):
     """
     Return a borrowed book.
 
@@ -93,48 +54,16 @@ def return_book(
     - Fine is calculated if book is overdue ($0.50 per day)
     - Book's available_copies is incremented
     """
-    # Find the active loan
-    active_loan = db.query(Loan).filter(
-        and_(
-            Loan.member_id == loan.member_id,
-            Loan.book_id == loan.book_id,
-            Loan.returned_date.is_(None)
-        )
-    ).first()
-
+    active_loan = crud.get_active_loan(db, loan.member_id, loan.book_id)
     if not active_loan:
-        raise HTTPException(
-            status_code=400,
-            detail="No active loan found for this book and member"
-        )
+        raise HTTPException(status_code=400, detail="No active loan found for this book and member")
 
-    # Set return date
-    today = date.today()
-    active_loan.returned_date = today
-
-    # Calculate fine if overdue
-    if today > active_loan.due_date:
-        overdue_days = (today - active_loan.due_date).days
-        active_loan.fine_amount = overdue_days * 0.50
-    else:
-        active_loan.fine_amount = 0.0
-
-    # Increment available copies
-    book = db.query(Book).filter(Book.id == loan.book_id).first()
-    if book:
-        book.available_copies += 1
-
-    db.commit()
-    db.refresh(active_loan)
-
-    return active_loan
+    book = crud.get_book(db, loan.book_id)
+    return crud.close_loan(db, active_loan, book)
 
 
 @router.get("/{member_id}", response_model=List[LoanResponse])
-def get_loans(
-        member_id: int,
-        db: Session = Depends(get_db)
-):
+def get_loans(member_id: int, db: Session = Depends(get_db)):
     """
     Get all active loans for a member.
 
@@ -142,27 +71,13 @@ def get_loans(
 
     Returns only loans where returned_date is NULL (active loans).
     """
-    # Check if member exists
-    member = db.query(Member).filter(Member.id == member_id).first()
-    if not member:
+    if not crud.get_member(db, member_id):
         raise HTTPException(status_code=404, detail="Member not found")
-
-    # Get active loans
-    active_loans = db.query(Loan).filter(
-        and_(
-            Loan.member_id == member_id,
-            Loan.returned_date.is_(None)
-        )
-    ).all()
-
-    return active_loans
+    return crud.get_active_loans_for_member(db, member_id)
 
 
 @router.get("/{member_id}/fines", response_model=dict)
-def check_fines(
-        member_id: int,
-        db: Session = Depends(get_db)
-):
+def check_fines(member_id: int, db: Session = Depends(get_db)):
     """
     Calculate overdue fines for a member.
 
@@ -178,13 +93,10 @@ def check_fines(
     - $0.50 per day overdue for active loans
     - Includes fine_amount from returned books (if not paid)
     """
-    # Check if member exists
-    member = db.query(Member).filter(Member.id == member_id).first()
-    if not member:
+    if not crud.get_member(db, member_id):
         raise HTTPException(status_code=404, detail="Member not found")
 
-    # Get all loans for the member
-    all_loans = db.query(Loan).filter(Loan.member_id == member_id).all()
+    all_loans = crud.get_member_loans(db, member_id)
 
     total_fines = 0.0
     active_overdue_loans = 0
@@ -192,12 +104,10 @@ def check_fines(
     today = date.today()
 
     for loan in all_loans:
-        # Active loans that are overdue
         if loan.returned_date is None and loan.due_date < today:
             overdue_days = (today - loan.due_date).days
             total_fines += overdue_days * 0.50
             active_overdue_loans += 1
-        # Returned books with unpaid fines
         elif loan.returned_date and loan.fine_amount:
             total_fines += loan.fine_amount
             unpaid_returned_fines += loan.fine_amount

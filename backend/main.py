@@ -1,7 +1,5 @@
-import uvicorn
 from fastapi import FastAPI
 from backend.database import engine, Base
-from backend.models import Book, Member, Loan
 from backend.routers import books, members, loans
 from fastapi.middleware.cors import CORSMiddleware
 

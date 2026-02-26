@@ -1,0 +1,181 @@
+{
+  "info": {
+    "name": "LibraryMCP API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "List Books",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/books/"
+          }
+        },
+        {
+          "name": "Create Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"1984\",\n  \"author\": \"George Orwell\",\n  \"isbn\": \"978-0451524935\",\n  \"total_copies\": 1,\n  \"genre\": \"Fiction\"\n}"
+            },
+            "url": "http://127.0.0.1:8000/books/"
+          }
+        },
+        {
+          "name": "Get Book",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/books/1"
+          }
+        },
+        {
+          "name": "Update Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated title\"\n}"
+            },
+            "url": "http://127.0.0.1:8000/books/1"
+          }
+        },
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "url": "http://127.0.0.1:8000/books/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/members/"
+          }
+        },
+        {
+          "name": "Register Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bob Smith\",\n  \"email\": \"bob@example.com\"\n}"
+            },
+            "url": "http://127.0.0.1:8000/members/"
+          }
+        },
+        {
+          "name": "Get Member",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/members/1"
+          }
+        },
+        {
+          "name": "Update Member",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": "http://127.0.0.1:8000/members/1"
+          }
+        },
+        {
+          "name": "Delete Member",
+          "request": {
+            "method": "DELETE",
+            "url": "http://127.0.0.1:8000/members/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loans",
+      "item": [
+        {
+          "name": "Borrow Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 1,\n  \"member_id\": 1\n}"
+            },
+            "url": "http://127.0.0.1:8000/loans/borrow"
+          }
+        },
+        {
+          "name": "Return Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 1,\n  \"member_id\": 1\n}"
+            },
+            "url": "http://127.0.0.1:8000/loans/return"
+          }
+        },
+        {
+          "name": "Get Active Loans",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/loans/1"
+          }
+        },
+        {
+          "name": "Check Fines",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/loans/1/fines"
+          }
+        }
+      ]
+    }
+  ]
+}

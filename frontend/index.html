@@ -36,6 +36,18 @@
         button {
             cursor: pointer;
         }
+
+        input.invalid {
+            border: 1px solid #e53935;
+            outline: none;
+        }
+
+        .form-error {
+            display: block;
+            color: #e53935;
+            font-size: 0.85em;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
@@ -47,9 +59,12 @@
     <h2>Books</h2>
 
     <h3>Add book</h3>
+    <span id="book-form-error" class="form-error" hidden></span>
     <input id="book-title" placeholder="Title">
     <input id="book-author" placeholder="Author">
     <input id="book-isbn" placeholder="ISBN">
+    <input id="book-total-copies" placeholder="Total copies" type="number" min="1" value="1">
+    <input id="book-genre" placeholder="Genre">
     <button onclick="createBook()">Add</button>
 
     <h3>Books list</h3>
@@ -120,15 +135,43 @@
 		});
 	}
 
+	function validateBookForm(title, author, isbn, total_copies) {
+		const fields = {
+			'book-title': !title,
+			'book-author': !author,
+			'book-isbn': !isbn || !/^[\d-]{10,17}$/.test(isbn) || (isbn.replace(/-/g, '').length !== 10 && isbn.replace(/-/g, '').length !== 13),
+			'book-total-copies': isNaN(total_copies) || total_copies < 1,
+		};
+
+		let errorMsg = '';
+		for (const [id, invalid] of Object.entries(fields)) {
+			document.getElementById(id).classList.toggle('invalid', invalid);
+		}
+
+		if (!title || !author) errorMsg = 'Title and Author are required.';
+		else if (fields['book-isbn']) errorMsg = 'ISBN must be a valid 10- or 13-digit number.';
+		else if (fields['book-total-copies']) errorMsg = 'Total copies must be at least 1.';
+
+		const errorEl = document.getElementById('book-form-error');
+		errorEl.textContent = errorMsg;
+		errorEl.hidden = !errorMsg;
+
+		return !errorMsg;
+	}
+
 	async function createBook() {
-		const title = document.getElementById('book-title').value;
-		const author = document.getElementById('book-author').value;
-		const isbn = document.getElementById('book-isbn').value;
+		const title = document.getElementById('book-title').value.trim();
+		const author = document.getElementById('book-author').value.trim();
+		const isbn = document.getElementById('book-isbn').value.trim();
+		const total_copies = parseInt(document.getElementById('book-total-copies').value);
+		const genre = document.getElementById('book-genre').value.trim() || null;
+
+		if (!validateBookForm(title, author, isbn, total_copies)) return;
 
 		await fetch(`${API}/books/`, {
 			method: 'POST',
 			headers: {'Content-Type': 'application/json'},
-			body: JSON.stringify({title, author, isbn})
+			body: JSON.stringify({title, author, isbn, total_copies, genre})
 		});
 
 		await loadBooks();

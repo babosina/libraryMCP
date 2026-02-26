@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8"/>
-    <title>Library – Books & Members</title>
+    <title>Library – Books, Members & Loans</title>
     <style>
         body {
             font-family: sans-serif;
@@ -76,6 +76,8 @@
             <th>ID</th>
             <th>Title</th>
             <th>Author</th>
+            <th>ISBN</th>
+            <th>Genre</th>
             <th>Available</th>
             <th>Delete</th>
         </tr>
@@ -84,11 +86,49 @@
     </table>
 </section>
 
+<!-- LOANS -->
+<section>
+    <h2>Loans</h2>
+
+    <h3>Borrow book</h3>
+    <span id="loan-form-error" class="form-error" hidden></span>
+    <input id="loan-member-id" placeholder="Member ID" type="number" min="1">
+    <input id="loan-book-id" placeholder="Book ID" type="number" min="1">
+    <button onclick="borrowBook()">Borrow</button>
+
+    <h3>Return book</h3>
+    <span id="return-form-error" class="form-error" hidden></span>
+    <input id="return-member-id" placeholder="Member ID" type="number" min="1">
+    <input id="return-book-id" placeholder="Book ID" type="number" min="1">
+    <button onclick="returnBook()">Return</button>
+
+    <h3>Active loans by member</h3>
+    <span id="loans-error" class="form-error" hidden></span>
+    <input id="loans-member-id" placeholder="Member ID" type="number" min="1">
+    <button onclick="loadLoans()">Load</button>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Book ID</th>
+            <th>Member ID</th>
+            <th>Borrowed</th>
+            <th>Due</th>
+            <th>Returned</th>
+            <th>Fine</th>
+        </tr>
+        </thead>
+        <tbody id="loans"></tbody>
+    </table>
+</section>
+
 <!-- MEMBERS -->
 <section>
     <h2>Members</h2>
 
     <h3>Add member</h3>
+    <span id="member-form-error" class="form-error" hidden></span>
     <input id="member-name" placeholder="Name">
     <input id="member-email" placeholder="Email">
     <button onclick="createMember()">Add</button>
@@ -128,6 +168,8 @@
       <td>${b.id}</td>
       <td>${b.title}</td>
       <td>${b.author}</td>
+      <td>${b.isbn}</td>
+      <td>${b.genre ?? '—'}</td>
       <td>${b.available_copies}</td>
       <td><button onclick="deleteBook(${b.id})">❌</button></td>
     `;
@@ -204,9 +246,34 @@
 		});
 	}
 
+	function validateMemberForm(name, email) {
+		const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+		const fields = {
+			'member-name': !name,
+			'member-email': !email || !emailPattern.test(email),
+		};
+
+		let errorMsg = '';
+		for (const [id, invalid] of Object.entries(fields)) {
+			document.getElementById(id).classList.toggle('invalid', invalid);
+		}
+
+		if (!name) errorMsg = 'Name is required.';
+		else if (!email) errorMsg = 'Email is required.';
+		else if (fields['member-email']) errorMsg = 'Please enter a valid email address.';
+
+		const errorEl = document.getElementById('member-form-error');
+		errorEl.textContent = errorMsg;
+		errorEl.hidden = !errorMsg;
+
+		return !errorMsg;
+	}
+
 	async function createMember() {
-		const name = document.getElementById('member-name').value;
-		const email = document.getElementById('member-email').value;
+		const name = document.getElementById('member-name').value.trim();
+		const email = document.getElementById('member-email').value.trim();
+
+		if (!validateMemberForm(name, email)) return;
 
 		await fetch(`${API}/members/`, {
 			method: 'POST',
@@ -220,6 +287,100 @@
 	async function deleteMember(id) {
 		await fetch(`${API}/members/${id}`, {method: 'DELETE'});
 		await loadMembers();
+	}
+
+	/* ---------------- LOANS ---------------- */
+
+	async function loadLoans() {
+		const memberId = document.getElementById('loans-member-id').value.trim();
+		const errorEl = document.getElementById('loans-error');
+		if (!memberId) return;
+
+		const res = await fetch(`${API}/loans/${memberId}`);
+		const data = await res.json();
+
+		if (!res.ok) {
+			errorEl.textContent = data.detail ?? 'Error loading loans.';
+			errorEl.hidden = false;
+			document.getElementById('loans').innerHTML = '';
+			return;
+		}
+		errorEl.textContent = '';
+		errorEl.hidden = true;
+
+		const loans = data;
+		const tbody = document.getElementById('loans');
+		tbody.innerHTML = '';
+
+		loans.forEach(l => {
+			const tr = document.createElement('tr');
+			tr.innerHTML = `
+      <td>${l.id}</td>
+      <td>${l.book_id}</td>
+      <td>${l.member_id}</td>
+      <td>${l.borrowed_date}</td>
+      <td>${l.due_date}</td>
+      <td>${l.returned_date ?? '—'}</td>
+      <td>${l.fine_amount != null ? '$' + l.fine_amount.toFixed(2) : '—'}</td>
+    `;
+			tbody.appendChild(tr);
+		});
+	}
+
+	async function borrowBook() {
+		const member_id = parseInt(document.getElementById('loan-member-id').value);
+		const book_id = parseInt(document.getElementById('loan-book-id').value);
+		const errorEl = document.getElementById('loan-form-error');
+
+		if (!member_id || !book_id) {
+			errorEl.textContent = 'Member ID and Book ID are required.';
+			errorEl.hidden = false;
+			return;
+		}
+		errorEl.hidden = true;
+
+		const res = await fetch(`${API}/loans/borrow`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({member_id, book_id})
+		});
+
+		if (!res.ok) {
+			const data = await res.json();
+			errorEl.textContent = data.detail ?? 'Error borrowing book.';
+			errorEl.hidden = false;
+			return;
+		}
+
+		await loadBooks();
+	}
+
+	async function returnBook() {
+		const member_id = parseInt(document.getElementById('return-member-id').value);
+		const book_id = parseInt(document.getElementById('return-book-id').value);
+		const errorEl = document.getElementById('return-form-error');
+
+		if (!member_id || !book_id) {
+			errorEl.textContent = 'Member ID and Book ID are required.';
+			errorEl.hidden = false;
+			return;
+		}
+		errorEl.hidden = true;
+
+		const res = await fetch(`${API}/loans/return`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({member_id, book_id})
+		});
+
+		if (!res.ok) {
+			const data = await res.json();
+			errorEl.textContent = data.detail ?? 'Error returning book.';
+			errorEl.hidden = false;
+			return;
+		}
+
+		await loadBooks();
 	}
 
 	/* initial load */

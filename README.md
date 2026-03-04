@@ -114,7 +114,3 @@ You can interact with the API using a tiny frontend:
 - `POST /loans/return` — Return a book (increments availability; computes fine if overdue: $0.50/day).
 - `GET /loans/{member_id}` — List active loans for a member.
 - `GET /loans/{member_id}/fines` — Calculate and return fine breakdown for a member.
-
-## License
-
-[MIT License](LICENSE)

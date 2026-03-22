@@ -149,6 +149,37 @@ def delete_book(book_id: int) -> str:
     return f"Book with ID {book_id} deleted successfully."
 
 
+@mcp.tool(name="list_members",
+          description="Lists all library members with optional filters by name, email, or active status.")
+def list_members(
+        name: Optional[str] = None,
+        email: Optional[str] = None,
+        is_active: Optional[bool] = None,
+) -> str:
+    params: dict = {}
+    if name:
+        params["name"] = name
+    if email:
+        params["email"] = email
+    if is_active is not None:
+        params["is_active"] = is_active
+
+    response = httpx.get(f"{BACKEND_URL}/members/", params=params)
+    response.raise_for_status()
+    members = response.json()
+
+    if not members:
+        return "No members found matching the criteria."
+
+    lines = []
+    for m in members:
+        status = "Active" if m["is_active"] else "Inactive"
+        lines.append(
+            f"[ID: {m['id']}] {m['name']} | Email: {m['email']} | Joined: {m['joined_date']} | {status}"
+        )
+    return "\n".join(lines)
+
+
 @mcp.tool(name="register_member",
           description="Registers a new library member with a name and email address. Email must be unique.")
 def register_member(name: str, email: str) -> str:
@@ -213,3 +244,81 @@ def delete_member(member_id: int) -> str:
         return f"Cannot delete member: {response.json().get('detail', 'member has active loans or unpaid fines')}"
     response.raise_for_status()
     return f"Member with ID {member_id} deleted successfully."
+
+
+@mcp.tool(name="borrow_book",
+          description="Borrows a book for a member, creating a loan record. "
+                      "Fails if the book has no available copies or the member already has an active loan for it.")
+def borrow_book(member_id: int, book_id: int) -> str:
+    payload = {"member_id": member_id, "book_id": book_id}
+    response = httpx.post(f"{BACKEND_URL}/loans/borrow", json=payload)
+    if response.status_code == 404:
+        return f"Not found: {response.json().get('detail', 'member or book not found')}"
+    if response.status_code == 400:
+        return f"Cannot borrow: {response.json().get('detail', 'member account is not active')}"
+    if response.status_code == 409:
+        return f"Cannot borrow: {response.json().get('detail', 'conflict')}"
+    response.raise_for_status()
+    loan = response.json()
+    return (
+        f"Book borrowed successfully.\n"
+        f"Loan ID: {loan['id']} | Member ID: {loan['member_id']} | Book ID: {loan['book_id']}\n"
+        f"Borrowed: {loan['borrowed_date']} | Due: {loan['due_date']}"
+    )
+
+
+@mcp.tool(name="return_book",
+          description="Returns a borrowed book for a member, closing the loan and calculating any overdue fines "
+                      "($0.50/day). Fails if no active loan exists for the member and book.")
+def return_book(member_id: int, book_id: int) -> str:
+    payload = {"member_id": member_id, "book_id": book_id}
+    response = httpx.post(f"{BACKEND_URL}/loans/return", json=payload)
+    if response.status_code == 400:
+        return f"Cannot return: {response.json().get('detail', 'no active loan found')}"
+    response.raise_for_status()
+    loan = response.json()
+    fine_str = f"\nFine: ${loan['fine_amount']:.2f}" if loan.get("fine_amount") else "\nNo fine."
+    return (
+        f"Book returned successfully.\n"
+        f"Loan ID: {loan['id']} | Member ID: {loan['member_id']} | Book ID: {loan['book_id']}\n"
+        f"Borrowed: {loan['borrowed_date']} | Due: {loan['due_date']} | Returned: {loan['returned_date']}"
+        f"{fine_str}"
+    )
+
+
+@mcp.tool(name="get_loans",
+          description="Lists all active (not yet returned) loans for a member by member ID.")
+def get_loans(member_id: int) -> str:
+    response = httpx.get(f"{BACKEND_URL}/loans/{member_id}")
+    if response.status_code == 404:
+        return f"Member with ID {member_id} not found."
+    response.raise_for_status()
+    loans = response.json()
+
+    if not loans:
+        return f"Member {member_id} has no active loans."
+
+    lines = [f"Active loans for member {member_id} ({len(loans)} loan(s)):"]
+    for loan in loans:
+        lines.append(
+            f"  - Loan ID: {loan['id']} | Book ID: {loan['book_id']} | "
+            f"Borrowed: {loan['borrowed_date']} | Due: {loan['due_date']}"
+        )
+    return "\n".join(lines)
+
+
+@mcp.tool(name="check_fines",
+          description="Returns the total outstanding fines for a member, including overdue active loans "
+                      "and unpaid fines from returned books.")
+def check_fines(member_id: int) -> str:
+    response = httpx.get(f"{BACKEND_URL}/loans/{member_id}/fines")
+    if response.status_code == 404:
+        return f"Member with ID {member_id} not found."
+    response.raise_for_status()
+    data = response.json()
+    return (
+        f"Fines for member {member_id}:\n"
+        f"Total outstanding fines: ${data['total_fines']:.2f}\n"
+        f"Active overdue loans: {data['active_overdue_loans']}\n"
+        f"Unpaid fines from returned books: ${data['unpaid_returned_fines']:.2f}"
+    )

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List
 from datetime import date
 import re
@@ -30,8 +30,7 @@ class BookResponse(BookBase):
     id: int
     available_copies: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ========== MEMBER SCHEMAS ==========
@@ -62,8 +61,7 @@ class MemberResponse(MemberBase):
     active_loans_count: Optional[int] = Field(default=None, description="Number of currently active loans")
     total_fines: Optional[float] = Field(default=None, description="Total outstanding fines")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MemberUpdate(BaseModel):
@@ -100,5 +98,4 @@ class LoanResponse(LoanBase):
     returned_date: Optional[date] = None
     fine_amount: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -91,6 +91,56 @@ You can interact with the API using a tiny frontend:
 - Ensure the backend runs at `http://localhost:8000` (CORS is enabled)
 - Use the UI to add/list books and members
 
+## MCP Server
+
+The MCP server exposes the library's functionality as tools that AI assistants (Claude, etc.) can call directly.
+
+### Running the MCP Server
+
+The MCP server communicates over stdio. Start the FastAPI backend first, then run:
+
+```bash
+uv run python mcp/main_stdio.py
+```
+
+The server reads `BACKEND_URL` from the environment (default: `http://localhost:8000`).
+
+### Connecting to Claude Desktop
+
+Add the following to your Claude Desktop configuration (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "library": {
+      "command": "uv",
+      "args": ["run", "python", "mcp/main_stdio.py"],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/libraryMCP"
+      }
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `search_books` | Search books by title, author, or genre |
+| `get_book` | Get full details of a book by ID |
+| `add_book` | Add a new book to the catalog |
+| `update_book` | Update book metadata or copy count |
+| `delete_book` | Remove a book (blocked if active loans exist) |
+| `list_members` | List members with optional filters |
+| `register_member` | Register a new library member |
+| `get_member` | Get member profile, loan history, and fines |
+| `delete_member` | Delete a member (blocked if active loans or unpaid fines) |
+| `borrow_book` | Borrow a book for a member |
+| `return_book` | Return a borrowed book, calculating any overdue fine |
+| `get_loans` | List all active loans for a member |
+| `check_fines` | Get total outstanding fines for a member |
+
 ## API Endpoints Overview
 
 ### Books

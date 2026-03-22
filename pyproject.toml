@@ -13,3 +13,6 @@ dependencies = [
     "mcp[cli]>=1.26.0",
     "httpx>=0.28.1",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

@@ -1,9 +1,10 @@
+import os
 from typing import Optional
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 
-from backend.crud import get_books
-from backend.database import SessionLocal
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 mcp = FastMCP()
 
@@ -17,20 +18,26 @@ def search_books(
         genre: Optional[str] = None,
         available_only: bool = False,
 ) -> str:
-    db = SessionLocal()
-    try:
-        books = get_books(db, title=title, author=author, genre=genre, available_only=available_only)
-    finally:
-        db.close()
+    params: dict[str, str | bool] = {"available_only": available_only}
+    if title:
+        params["title"] = title
+    if author:
+        params["author"] = author
+    if genre:
+        params["genre"] = genre
+
+    response = httpx.get(f"{BACKEND_URL}/books/", params=params)
+    response.raise_for_status()
+    books = response.json()
 
     if not books:
         return "No books found matching the search criteria."
 
     lines = []
     for book in books:
-        availability = f"{book.available_copies}/{book.total_copies} copies available"
-        genre_str = f", Genre: {book.genre}" if book.genre else ""
+        availability = f"{book['available_copies']}/{book['total_copies']} copies available"
+        genre_str = f", Genre: {book['genre']}" if book.get("genre") else ""
         lines.append(
-            f"[ID: {book.id}] {book.title} by {book.author} | ISBN: {book.isbn}{genre_str} | {availability}"
+            f"[ID: {book['id']}] {book['title']} by {book['author']} | ISBN: {book['isbn']}{genre_str} | {availability}"
         )
     return "\n".join(lines)

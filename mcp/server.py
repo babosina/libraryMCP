@@ -147,3 +147,69 @@ def delete_book(book_id: int) -> str:
         return f"Cannot delete book: {response.json().get('detail', 'book has active loans')}"
     response.raise_for_status()
     return f"Book with ID {book_id} deleted successfully."
+
+
+@mcp.tool(name="register_member",
+          description="Registers a new library member with a name and email address. Email must be unique.")
+def register_member(name: str, email: str) -> str:
+    payload = {"name": name, "email": email}
+    response = httpx.post(f"{BACKEND_URL}/members/", json=payload)
+    if response.status_code == 409:
+        return f"A member with email {email} already exists."
+    if response.status_code == 422:
+        detail = response.json().get("detail", "Invalid input")
+        return f"Registration failed: {detail}"
+    response.raise_for_status()
+    member = response.json()
+    return (
+        f"Member registered successfully.\n"
+        f"ID: {member['id']} | Name: {member['name']} | Email: {member['email']} | "
+        f"Joined: {member['joined_date']} | Active: {member['is_active']}"
+    )
+
+
+@mcp.tool(name="get_member",
+          description="Retrieves a member's profile, loan history, and outstanding fines by member ID.")
+def get_member(member_id: int) -> str:
+    response = httpx.get(f"{BACKEND_URL}/members/{member_id}")
+    if response.status_code == 404:
+        return f"Member with ID {member_id} not found."
+    response.raise_for_status()
+    member = response.json()
+
+    status_str = "Active" if member["is_active"] else "Inactive"
+    lines = [
+        f"ID: {member['id']}",
+        f"Name: {member['name']}",
+        f"Email: {member['email']}",
+        f"Joined: {member['joined_date']}",
+        f"Status: {status_str}",
+        f"Active Loans: {member['active_loans_count']}",
+        f"Outstanding Fines: ${member['total_fines']:.2f}",
+    ]
+
+    loans = member.get("loans", [])
+    if loans:
+        lines.append(f"\nLoan History ({len(loans)} record(s)):")
+        for loan in loans:
+            returned = loan.get("returned_date")
+            loan_status = f"Returned: {returned}" if returned else "Active"
+            fine_str = f" | Fine: ${loan['fine_amount']:.2f}" if loan.get("fine_amount") else ""
+            lines.append(
+                f"  - Book ID {loan['book_id']} | Borrowed: {loan['borrowed_date']} | "
+                f"Due: {loan['due_date']} | {loan_status}{fine_str}"
+            )
+
+    return "\n".join(lines)
+
+
+@mcp.tool(name="delete_member",
+          description="Deletes a member account by member ID. Fails if the member has active loans or unpaid fines.")
+def delete_member(member_id: int) -> str:
+    response = httpx.delete(f"{BACKEND_URL}/members/{member_id}")
+    if response.status_code == 404:
+        return f"Member with ID {member_id} not found."
+    if response.status_code == 400:
+        return f"Cannot delete member: {response.json().get('detail', 'member has active loans or unpaid fines')}"
+    response.raise_for_status()
+    return f"Member with ID {member_id} deleted successfully."

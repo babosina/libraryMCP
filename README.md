@@ -100,7 +100,7 @@ The MCP server exposes the library's functionality as tools that AI assistants (
 The MCP server communicates over stdio. Start the FastAPI backend first, then run:
 
 ```bash
-uv run python mcp/main_stdio.py
+uv run python mcp_server/main_stdio.py
 ```
 
 The server reads `BACKEND_URL` from the environment (default: `http://localhost:8000`).
@@ -114,7 +114,7 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
   "mcpServers": {
     "library": {
       "command": "uv",
-      "args": ["run", "python", "mcp/main_stdio.py"],
+      "args": ["run", "python", "mcp_server/main_stdio.py"],
       "env": {
         "PYTHONPATH": "/absolute/path/to/libraryMCP"
       }

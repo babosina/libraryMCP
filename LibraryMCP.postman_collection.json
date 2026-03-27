@@ -1,8 +1,16 @@
 {
   "info": {
     "name": "LibraryMCP API",
+    "description": "Library management API with books, members, and loans.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ],
   "item": [
     {
       "name": "Books",
@@ -11,13 +19,45 @@
           "name": "List Books",
           "request": {
             "method": "GET",
-            "url": "http://127.0.0.1:8000/books/"
+            "description": "List all books with optional filters.",
+            "url": {
+              "raw": "{{baseUrl}}/books/",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", ""],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "",
+                  "description": "Filter by book title (partial match)",
+                  "disabled": true
+                },
+                {
+                  "key": "author",
+                  "value": "",
+                  "description": "Filter by author name (partial match)",
+                  "disabled": true
+                },
+                {
+                  "key": "genre",
+                  "value": "",
+                  "description": "Filter by genre (partial match)",
+                  "disabled": true
+                },
+                {
+                  "key": "available_only",
+                  "value": "false",
+                  "description": "Show only books with available copies",
+                  "disabled": true
+                }
+              ]
+            }
           }
         },
         {
           "name": "Create Book",
           "request": {
             "method": "POST",
+            "description": "Add a new book to the catalog. Returns 409 if ISBN already exists.",
             "header": [
               {
                 "key": "Content-Type",
@@ -26,22 +66,37 @@
             ],
             "body": {
               "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n  \"title\": \"1984\",\n  \"author\": \"George Orwell\",\n  \"isbn\": \"978-0451524935\",\n  \"total_copies\": 1,\n  \"genre\": \"Fiction\"\n}"
             },
-            "url": "http://127.0.0.1:8000/books/"
+            "url": {
+              "raw": "{{baseUrl}}/books/",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", ""]
+            }
           }
         },
         {
           "name": "Get Book",
           "request": {
             "method": "GET",
-            "url": "http://127.0.0.1:8000/books/1"
+            "description": "Retrieve a book by its ID.",
+            "url": {
+              "raw": "{{baseUrl}}/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", "1"]
+            }
           }
         },
         {
           "name": "Update Book",
           "request": {
             "method": "PUT",
+            "description": "Update an existing book. All fields are optional.",
             "header": [
               {
                 "key": "Content-Type",
@@ -50,16 +105,30 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated title\"\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"title\": null,\n  \"author\": null,\n  \"isbn\": null,\n  \"total_copies\": null,\n  \"available_copies\": null,\n  \"genre\": null\n}"
             },
-            "url": "http://127.0.0.1:8000/books/1"
+            "url": {
+              "raw": "{{baseUrl}}/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", "1"]
+            }
           }
         },
         {
           "name": "Delete Book",
           "request": {
             "method": "DELETE",
-            "url": "http://127.0.0.1:8000/books/1"
+            "description": "Delete a book. Returns 409 if the book has active loans.",
+            "url": {
+              "raw": "{{baseUrl}}/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", "1"]
+            }
           }
         }
       ]
@@ -71,13 +140,51 @@
           "name": "List Members",
           "request": {
             "method": "GET",
-            "url": "http://127.0.0.1:8000/members/"
+            "description": "List all members with optional filters. Returns basic info without loan history.",
+            "url": {
+              "raw": "{{baseUrl}}/members/",
+              "host": ["{{baseUrl}}"],
+              "path": ["members", ""],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0",
+                  "description": "Number of records to skip (pagination)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "description": "Max records to return (1-500)",
+                  "disabled": true
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "Filter by name (partial match)",
+                  "disabled": true
+                },
+                {
+                  "key": "email",
+                  "value": "",
+                  "description": "Filter by email (partial match)",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "description": "Filter by active status",
+                  "disabled": true
+                }
+              ]
+            }
           }
         },
         {
           "name": "Register Member",
           "request": {
             "method": "POST",
+            "description": "Create a new library member.",
             "header": [
               {
                 "key": "Content-Type",
@@ -86,22 +193,37 @@
             ],
             "body": {
               "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n  \"name\": \"Bob Smith\",\n  \"email\": \"bob@example.com\"\n}"
             },
-            "url": "http://127.0.0.1:8000/members/"
+            "url": {
+              "raw": "{{baseUrl}}/members/",
+              "host": ["{{baseUrl}}"],
+              "path": ["members", ""]
+            }
           }
         },
         {
           "name": "Get Member",
           "request": {
             "method": "GET",
-            "url": "http://127.0.0.1:8000/members/1"
+            "description": "Get a member by ID with full loan history and outstanding fines.",
+            "url": {
+              "raw": "{{baseUrl}}/members/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["members", "1"]
+            }
           }
         },
         {
           "name": "Update Member",
           "request": {
             "method": "PUT",
+            "description": "Update member info. Cannot deactivate a member with active loans.",
             "header": [
               {
                 "key": "Content-Type",
@@ -110,16 +232,30 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"name\": null,\n  \"email\": null,\n  \"is_active\": null\n}"
             },
-            "url": "http://127.0.0.1:8000/members/1"
+            "url": {
+              "raw": "{{baseUrl}}/members/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["members", "1"]
+            }
           }
         },
         {
           "name": "Delete Member",
           "request": {
             "method": "DELETE",
-            "url": "http://127.0.0.1:8000/members/1"
+            "description": "Delete a member. Cannot delete if they have active loans or unpaid fines.",
+            "url": {
+              "raw": "{{baseUrl}}/members/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["members", "1"]
+            }
           }
         }
       ]
@@ -131,6 +267,7 @@
           "name": "Borrow Book",
           "request": {
             "method": "POST",
+            "description": "Create a loan record. Book must have available copies; member must be active and not already borrowing the same book.",
             "header": [
               {
                 "key": "Content-Type",
@@ -139,15 +276,25 @@
             ],
             "body": {
               "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n  \"book_id\": 1,\n  \"member_id\": 1\n}"
             },
-            "url": "http://127.0.0.1:8000/loans/borrow"
+            "url": {
+              "raw": "{{baseUrl}}/loans/borrow",
+              "host": ["{{baseUrl}}"],
+              "path": ["loans", "borrow"]
+            }
           }
         },
         {
           "name": "Return Book",
           "request": {
             "method": "POST",
+            "description": "Return a borrowed book. Calculates fine if overdue ($0.50/day).",
             "header": [
               {
                 "key": "Content-Type",
@@ -156,23 +303,42 @@
             ],
             "body": {
               "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
               "raw": "{\n  \"book_id\": 1,\n  \"member_id\": 1\n}"
             },
-            "url": "http://127.0.0.1:8000/loans/return"
+            "url": {
+              "raw": "{{baseUrl}}/loans/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["loans", "return"]
+            }
           }
         },
         {
           "name": "Get Active Loans",
           "request": {
             "method": "GET",
-            "url": "http://127.0.0.1:8000/loans/1"
+            "description": "Get all active (not yet returned) loans for a member.",
+            "url": {
+              "raw": "{{baseUrl}}/loans/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["loans", "1"]
+            }
           }
         },
         {
           "name": "Check Fines",
           "request": {
             "method": "GET",
-            "url": "http://127.0.0.1:8000/loans/1/fines"
+            "description": "Calculate total outstanding fines for a member. Includes overdue active loans ($0.50/day) and unpaid fines from returned books.",
+            "url": {
+              "raw": "{{baseUrl}}/loans/1/fines",
+              "host": ["{{baseUrl}}"],
+              "path": ["loans", "1", "fines"]
+            }
           }
         }
       ]

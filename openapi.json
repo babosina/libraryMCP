@@ -11,7 +11,7 @@
           "Books"
         ],
         "summary": "List Books",
-        "description": "List all books with optional filters.\n\n- **title**: Filter books by title (case-insensitive partial match)\n- **author**: Filter books by author (case-insensitive partial match)\n- **genre**: Filter books by genre (case-insensitive partial match)\n- **available_only**: If True, only return books with available_copies \u003E 0",
+        "description": "List all books with optional filters.\n\n- **title**: Filter books by title (Optional[str])\n- **author**: Filter books by author (Optional[str])\n- **genre**: Filter books by genre (Optional[str])\n- **available_only**: If True, only return books with available_copies \u003E 0 (bool)\n- **db**: Database session (Session)",
         "operationId": "list_books_books__get",
         "parameters": [
           {
@@ -113,7 +113,7 @@
           "Books"
         ],
         "summary": "Create Book",
-        "description": "Add a new book to the catalog\n\n- **title**: The title of the book\n- **author**: The author of the book\n- **isbn**: Unique ISBN identifier\n- **total_copies**: Total number of copies (defaults to 1)\n- **genre**: Optional genre classification\n\nReturns the created book with its assigned ID and available_copies set to total_copies.\nRaises 409 Error if a book with the same ISBN already exists.",
+        "description": "Add a new book to the catalog.\n\n- **book**: Book details for creation (BookCreate)\n- **db**: Database session (Session)\n\nReturns the created book with its assigned ID and available_copies set to total_copies.\nRaises 409 Error if a book with the same ISBN already exists.",
         "operationId": "create_book_books__post",
         "requestBody": {
           "required": true,
@@ -155,7 +155,7 @@
           "Books"
         ],
         "summary": "Get Book",
-        "description": "Retrieve a book by its ID.\n\n- **book_id**: The unique identifier of the book to retrieve.",
+        "description": "Retrieve a book by its ID.\n\n- **book_id**: The unique identifier of the book to retrieve (int)\n- **db**: Database session (Session)",
         "operationId": "get_book_books__book_id__get",
         "parameters": [
           {
@@ -196,7 +196,7 @@
           "Books"
         ],
         "summary": "Update Book",
-        "description": "Update an existing book in the database by book_id.",
+        "description": "Update an existing book in the database by book_id.\n\n- **book_id**: The unique identifier of the book to update (int)\n- **book_update**: The fields to update (BookUpdate)\n- **db**: Database session (Session)",
         "operationId": "update_book_books__book_id__put",
         "parameters": [
           {
@@ -247,7 +247,7 @@
           "Books"
         ],
         "summary": "Delete Book",
-        "description": "Delete a book from the database by book_id.",
+        "description": "Delete a book from the database by book_id.\n\n- **book_id**: The unique identifier of the book to delete (int)\n- **db**: Database session (Session)",
         "operationId": "delete_book_books__book_id__delete",
         "parameters": [
           {
@@ -807,7 +807,8 @@
           "author",
           "isbn"
         ],
-        "title": "BookCreate"
+        "title": "BookCreate",
+        "description": "Schema for creating a new Book."
       },
       "BookResponse": {
         "properties": {
@@ -869,7 +870,8 @@
           "id",
           "available_copies"
         ],
-        "title": "BookResponse"
+        "title": "BookResponse",
+        "description": "Schema for Book responses."
       },
       "BookUpdate": {
         "properties": {
@@ -943,7 +945,8 @@
           }
         },
         "type": "object",
-        "title": "BookUpdate"
+        "title": "BookUpdate",
+        "description": "Schema for updating an existing Book."
       },
       "HTTPValidationError": {
         "properties": {
@@ -974,7 +977,8 @@
           "book_id",
           "member_id"
         ],
-        "title": "LoanCreate"
+        "title": "LoanCreate",
+        "description": "Schema for creating a new Loan."
       },
       "LoanResponse": {
         "properties": {
@@ -1032,7 +1036,8 @@
           "borrowed_date",
           "due_date"
         ],
-        "title": "LoanResponse"
+        "title": "LoanResponse",
+        "description": "Schema for Loan responses."
       },
       "MemberCreate": {
         "properties": {
@@ -1056,7 +1061,8 @@
           "name",
           "email"
         ],
-        "title": "MemberCreate"
+        "title": "MemberCreate",
+        "description": "Schema for creating a new Member."
       },
       "MemberResponse": {
         "properties": {
@@ -1135,7 +1141,8 @@
           "joined_date",
           "is_active"
         ],
-        "title": "MemberResponse"
+        "title": "MemberResponse",
+        "description": "Schema for Member responses."
       },
       "MemberUpdate": {
         "properties": {
@@ -1174,7 +1181,8 @@
           }
         },
         "type": "object",
-        "title": "MemberUpdate"
+        "title": "MemberUpdate",
+        "description": "Schema for updating an existing Member."
       },
       "ValidationError": {
         "properties": {

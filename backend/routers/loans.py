@@ -1,6 +1,8 @@
+"""
+Router for loan-related operations (borrowing, returning, and fines).
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import date
 from typing import List
 
 from ..database import get_db
@@ -97,24 +99,9 @@ def check_fines(member_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Member not found")
 
     all_loans = crud.get_member_loans(db, member_id)
-
-    total_fines = 0.0
-    active_overdue_loans = 0
-    unpaid_returned_fines = 0.0
-    today = date.today()
-
-    for loan in all_loans:
-        if loan.returned_date is None and loan.due_date < today:
-            overdue_days = (today - loan.due_date).days
-            total_fines += overdue_days * 0.50
-            active_overdue_loans += 1
-        elif loan.returned_date and loan.fine_amount:
-            total_fines += loan.fine_amount
-            unpaid_returned_fines += loan.fine_amount
+    fine_details = crud.calculate_detailed_member_fines(all_loans)
 
     return {
         "member_id": member_id,
-        "total_fines": round(total_fines, 2),
-        "active_overdue_loans": active_overdue_loans,
-        "unpaid_returned_fines": round(unpaid_returned_fines, 2)
+        **fine_details
     }

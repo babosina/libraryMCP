@@ -139,6 +139,33 @@ def calculate_member_fines(loans: list) -> float:
     return total_fines
 
 
+def calculate_detailed_member_fines(loans: list[Loan]) -> dict:
+    """Calculate total outstanding fines: $0.50/day overdue for active loans
+    plus any recorded fine_amount on returned loans.
+
+    Returns a dictionary with details for reporting.
+    """
+    total_fines = 0.0
+    active_overdue_loans = 0
+    unpaid_returned_fines = 0.0
+    today = date.today()
+
+    for loan in loans:
+        if loan.returned_date is None and loan.due_date < today:
+            overdue_days = (today - loan.due_date).days
+            total_fines += overdue_days * 0.50
+            active_overdue_loans += 1
+        elif loan.returned_date and loan.fine_amount:
+            total_fines += loan.fine_amount
+            unpaid_returned_fines += loan.fine_amount
+
+    return {
+        "total_fines": round(total_fines, 2),
+        "active_overdue_loans": active_overdue_loans,
+        "unpaid_returned_fines": round(unpaid_returned_fines, 2)
+    }
+
+
 # ── Loans ──────────────────────────────────────────────────────────────────────
 
 def get_active_loan(db: Session, member_id: int, book_id: int) -> Loan | None:

@@ -1,3 +1,7 @@
+"""
+MCP Server implementation for the Library Management System.
+This server provides tools to manage books, members, and loans by interacting with the backend API.
+"""
 import os
 from typing import Optional
 
@@ -18,6 +22,10 @@ def search_books(
         genre: Optional[str] = None,
         available_only: bool = False,
 ) -> str:
+    """
+    Searches for books in the library by title, author, or genre.
+    Returns matching books with their availability status.
+    """
     params: dict[str, str | bool] = {"available_only": available_only}
     if title:
         params["title"] = title
@@ -46,6 +54,9 @@ def search_books(
 @mcp.tool(name="get_book",
           description="Retrieves full details of a single book by its ID.")
 def get_book(book_id: int) -> str:
+    """
+    Retrieves full details of a single book by its ID.
+    """
     response = httpx.get(f"{BACKEND_URL}/books/{book_id}")
     if response.status_code == 404:
         return f"Book with ID {book_id} not found."
@@ -72,6 +83,9 @@ def add_book(
         total_copies: int = 1,
         genre: Optional[str] = None,
 ) -> str:
+    """
+    Adds a new book to the library catalog. ISBN must be unique.
+    """
     payload: dict = {
         "title": title,
         "author": author,
@@ -105,6 +119,9 @@ def update_book(
         available_copies: Optional[int] = None,
         genre: Optional[str] = None,
 ) -> str:
+    """
+    Updates book metadata or copy count by book ID. Only provided fields are updated.
+    """
     payload: dict = {}
     if title is not None:
         payload["title"] = title
@@ -140,6 +157,9 @@ def update_book(
 @mcp.tool(name="delete_book",
           description="Removes a book from the catalog by book ID. Fails if the book has active loans.")
 def delete_book(book_id: int) -> str:
+    """
+    Removes a book from the catalog by book ID. Fails if the book has active loans.
+    """
     response = httpx.delete(f"{BACKEND_URL}/books/{book_id}")
     if response.status_code == 404:
         return f"Book with ID {book_id} not found."
@@ -156,6 +176,9 @@ def list_members(
         email: Optional[str] = None,
         is_active: Optional[bool] = None,
 ) -> str:
+    """
+    Lists all library members with optional filters by name, email, or active status.
+    """
     params: dict = {}
     if name:
         params["name"] = name
@@ -183,6 +206,9 @@ def list_members(
 @mcp.tool(name="register_member",
           description="Registers a new library member with a name and email address. Email must be unique.")
 def register_member(name: str, email: str) -> str:
+    """
+    Registers a new library member with a name and email address. Email must be unique.
+    """
     payload = {"name": name, "email": email}
     response = httpx.post(f"{BACKEND_URL}/members/", json=payload)
     if response.status_code == 409:
@@ -202,6 +228,9 @@ def register_member(name: str, email: str) -> str:
 @mcp.tool(name="get_member",
           description="Retrieves a member's profile, loan history, and outstanding fines by member ID.")
 def get_member(member_id: int) -> str:
+    """
+    Retrieves a member's profile, loan history, and outstanding fines by member ID.
+    """
     response = httpx.get(f"{BACKEND_URL}/members/{member_id}")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
@@ -237,6 +266,9 @@ def get_member(member_id: int) -> str:
 @mcp.tool(name="delete_member",
           description="Deletes a member account by member ID. Fails if the member has active loans or unpaid fines.")
 def delete_member(member_id: int) -> str:
+    """
+    Deletes a member account by member ID. Fails if the member has active loans or unpaid fines.
+    """
     response = httpx.delete(f"{BACKEND_URL}/members/{member_id}")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
@@ -250,6 +282,10 @@ def delete_member(member_id: int) -> str:
           description="Borrows a book for a member, creating a loan record. "
                       "Fails if the book has no available copies or the member already has an active loan for it.")
 def borrow_book(member_id: int, book_id: int) -> str:
+    """
+    Borrows a book for a member, creating a loan record.
+    Fails if the book has no available copies or the member already has an active loan for it.
+    """
     payload = {"member_id": member_id, "book_id": book_id}
     response = httpx.post(f"{BACKEND_URL}/loans/borrow", json=payload)
     if response.status_code == 404:
@@ -271,6 +307,10 @@ def borrow_book(member_id: int, book_id: int) -> str:
           description="Returns a borrowed book for a member, closing the loan and calculating any overdue fines "
                       "($0.50/day). Fails if no active loan exists for the member and book.")
 def return_book(member_id: int, book_id: int) -> str:
+    """
+    Returns a borrowed book for a member, closing the loan and calculating any overdue fines ($0.50/day).
+    Fails if no active loan exists for the member and book.
+    """
     payload = {"member_id": member_id, "book_id": book_id}
     response = httpx.post(f"{BACKEND_URL}/loans/return", json=payload)
     if response.status_code == 400:
@@ -289,6 +329,9 @@ def return_book(member_id: int, book_id: int) -> str:
 @mcp.tool(name="get_loans",
           description="Lists all active (not yet returned) loans for a member by member ID.")
 def get_loans(member_id: int) -> str:
+    """
+    Lists all active (not yet returned) loans for a member by member ID.
+    """
     response = httpx.get(f"{BACKEND_URL}/loans/{member_id}")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
@@ -311,6 +354,9 @@ def get_loans(member_id: int) -> str:
           description="Returns the total outstanding fines for a member, including overdue active loans "
                       "and unpaid fines from returned books.")
 def check_fines(member_id: int) -> str:
+    """
+    Returns the total outstanding fines for a member, including overdue active loans and unpaid fines from returned books.
+    """
     response = httpx.get(f"{BACKEND_URL}/loans/{member_id}/fines")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."

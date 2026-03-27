@@ -152,9 +152,7 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
       "command": "uv",
       "args": ["run", "python", "mcp_server/main_stdio.py"],
       "env": {
-        "PYTHONPATH": "/absolute/path/to/libraryMCP",
-        "ADMIN_USERNAME": "admin",
-        "ADMIN_PASSWORD": "your-password"
+        "PYTHONPATH": "/absolute/path/to/libraryMCP"
       }
     }
   }

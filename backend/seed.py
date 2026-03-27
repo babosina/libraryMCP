@@ -1,15 +1,25 @@
-from backend.database import SessionLocal, engine
-from backend.models import Book, Member, Loan, Base
+"""
+Seed the database with initial data for development and testing.
+Includes books, library members, and some active loans.
+"""
 from datetime import date, timedelta
 
+from sqlalchemy.orm import Session
 
-def seed_database():
-    """Seed the database with initial data"""
+from backend.database import SessionLocal, engine
+from backend.models import Base, Book, Loan, Member
+
+
+def seed_database() -> None:
+    """
+    Seed the database with initial data.
+    Creates tables if they don't exist and adds sample books, members, and loans.
+    """
 
     # Create all tables
     Base.metadata.create_all(bind=engine)
 
-    db = SessionLocal()
+    db: Session = SessionLocal()
 
     try:
         # Check if data already exists

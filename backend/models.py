@@ -1,11 +1,20 @@
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
-from sqlalchemy import Date, ForeignKey
+"""
+Database models for the LibraryMCP application.
+This module defines the SQLAlchemy ORM models for Books, Members, and Loans.
+"""
 from datetime import date, timedelta
+from typing import Optional
+
+from sqlalchemy import Date, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from backend.database import Base
 
 
 class Book(Base):
+    """
+    Represents a book in the library system.
+    """
     __tablename__ = "books"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -18,6 +27,9 @@ class Book(Base):
 
 
 class Member(Base):
+    """
+    Represents a library member.
+    """
     __tablename__ = "members"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -30,6 +42,9 @@ class Member(Base):
 
 
 class Loan(Base):
+    """
+    Represents a book loan record.
+    """
     __tablename__ = "loans"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

@@ -1,11 +1,19 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional, List
-from datetime import date
+"""
+Pydantic schemas for the LibraryMCP application.
+This module defines the request and response models for Books, Members, and Loans.
+"""
 import re
+from datetime import date
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ========== BOOK SCHEMAS ==========
 class BookBase(BaseModel):
+    """
+    Base schema for Book models.
+    """
     title: str = Field(..., examples=["1984"])
     author: str = Field(..., examples=["George Orwell"])
     isbn: str = Field(..., examples=["978-0451524935"])
@@ -14,10 +22,16 @@ class BookBase(BaseModel):
 
 
 class BookCreate(BookBase):
+    """
+    Schema for creating a new Book.
+    """
     pass
 
 
 class BookUpdate(BaseModel):
+    """
+    Schema for updating an existing Book.
+    """
     title: Optional[str] = None
     author: Optional[str] = None
     isbn: Optional[str] = None
@@ -27,6 +41,9 @@ class BookUpdate(BaseModel):
 
 
 class BookResponse(BookBase):
+    """
+    Schema for Book responses.
+    """
     id: int
     available_copies: int
 
@@ -35,6 +52,9 @@ class BookResponse(BookBase):
 
 # ========== MEMBER SCHEMAS ==========
 class MemberBase(BaseModel):
+    """
+    Base schema for Member models.
+    """
     name: str = Field(..., examples=["Bob Smith"])
     email: str = Field(..., examples=["bob@example.com"])
 
@@ -49,10 +69,16 @@ class MemberBase(BaseModel):
 
 
 class MemberCreate(MemberBase):
+    """
+    Schema for creating a new Member.
+    """
     pass
 
 
 class MemberResponse(MemberBase):
+    """
+    Schema for Member responses.
+    """
     id: int
     joined_date: date
     is_active: bool
@@ -65,6 +91,9 @@ class MemberResponse(MemberBase):
 
 
 class MemberUpdate(BaseModel):
+    """
+    Schema for updating an existing Member.
+    """
     name: Optional[str] = None
     email: Optional[str] = None
     is_active: Optional[bool] = None
@@ -83,15 +112,24 @@ class MemberUpdate(BaseModel):
 
 # ========== LOAN SCHEMAS ==========
 class LoanBase(BaseModel):
+    """
+    Base schema for Loan models.
+    """
     book_id: int
     member_id: int
 
 
 class LoanCreate(LoanBase):
+    """
+    Schema for creating a new Loan.
+    """
     pass
 
 
 class LoanResponse(LoanBase):
+    """
+    Schema for Loan responses.
+    """
     id: int
     borrowed_date: date
     due_date: date

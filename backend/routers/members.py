@@ -1,3 +1,6 @@
+"""
+Router for member-related operations (registration, retrieval, updates, and deletion).
+"""
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError

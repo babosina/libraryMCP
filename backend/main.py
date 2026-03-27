@@ -1,10 +1,17 @@
+"""
+Main entry point for the LibraryMCP FastAPI application.
+Initializes the database, sets up middleware, and includes all routers.
+"""
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from backend.database import engine, Base
 from backend.routers import books, members, loans
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="LibraryMCP")
 
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
 app.add_middleware(

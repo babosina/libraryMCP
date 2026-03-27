@@ -1,6 +1,6 @@
 # LibraryMCP
 
-> **Demo project** — This API has no authentication or authorization and is intended for local development and learning purposes only. Do not expose it to the public internet or use it to store real data.
+> **Demo project** — Intended for local development and learning purposes only. Do not expose it to the public internet or use it to store real data.
 
 LibraryMCP is a FastAPI-based backend server designed to serve as a Model Context Protocol (MCP) tool invocation source for library management. It provides a set of API endpoints to manage books, members, and loans in a library system.
 
@@ -9,6 +9,7 @@ LibraryMCP is a FastAPI-based backend server designed to serve as a Model Contex
 - **Books Management**: Full CRUD with filtering by title, author, genre, and availability.
 - **Members Management**: Register, list (with filters), view details with loan history and fines, update, and delete with business rules.
 - **Loans Management**: Borrow/return workflows, active loans listing, and fine calculations.
+- **JWT Authentication**: All API endpoints (except `/auth/token`) require a Bearer token. Credentials are configurable via environment variables.
 - **SQLite Database**: Lightweight storage using SQLAlchemy ORM.
 - **FastAPI**: High-performance web framework for building APIs with Python.
 - **CORS Enabled**: Open CORS for easy local development and browser demos.
@@ -21,9 +22,11 @@ LibraryMCP is a FastAPI-based backend server designed to serve as a Model Contex
 libraryMCP/
 ├── backend/                # Application source code
 │   ├── routers/            # API route handlers
+│   │   ├── auth.py         # Authentication endpoint (token issuance)
 │   │   ├── books.py        # Book-related endpoints
 │   │   ├── loans.py        # Loan-related endpoints
 │   │   └── members.py      # Member-related endpoints
+│   ├── auth.py             # JWT creation, verification, and get_current_user dependency
 │   ├── crud.py             # CRUD operations
 │   ├── database.py         # Database configuration and session management
 │   ├── main.py             # FastAPI application entry point (CORS + routers)
@@ -57,6 +60,14 @@ libraryMCP/
    uv sync
    ```
 
+3. Configure credentials in `.env` (copy from `.env` and fill in your values):
+   ```
+   ADMIN_USERNAME="admin"
+   ADMIN_PASSWORD="your-password"
+   SECRET_KEY="your-secret-key"
+   BACKEND_URL=http://localhost:8000
+   ```
+
 ## Usage
 
 ### Running the Server
@@ -69,11 +80,34 @@ uv run uvicorn backend.main:app --reload
 
 The API will be available at `http://127.0.0.1:8000`.
 
+### Authentication
+
+All endpoints except `POST /auth/token` require a JWT Bearer token.
+
+**Obtain a token:**
+```bash
+curl -X POST http://127.0.0.1:8000/auth/token \
+  -d "username=admin&password=your-password"
+```
+
+Response:
+```json
+{ "access_token": "<token>", "token_type": "bearer" }
+```
+
+**Use the token:**
+```bash
+curl http://127.0.0.1:8000/books/ \
+  -H "Authorization: Bearer <token>"
+```
+
+Tokens expire after 30 minutes. Configure credentials via `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `SECRET_KEY` environment variables (or in `.env`).
+
 ### API Documentation
 
 Once the server is running, you can access the interactive API documentation:
 
-- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) — click **Authorize**, call `POST /auth/token` first to get a token, then paste it in the Bearer field
 - **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 - **OpenAPI JSON**: [http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json) (a snapshot also lives at `openapi.json`)
 
@@ -105,7 +139,7 @@ The MCP server communicates over stdio. Start the FastAPI backend first, then ru
 uv run python mcp_server/main_stdio.py
 ```
 
-The server reads `BACKEND_URL` from the environment (default: `http://localhost:8000`).
+The server reads `BACKEND_URL`, `ADMIN_USERNAME`, and `ADMIN_PASSWORD` from the environment (or `.env`). It obtains a JWT token automatically on first use and refreshes it when it expires.
 
 ### Connecting to Claude Desktop
 
@@ -118,7 +152,9 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
       "command": "uv",
       "args": ["run", "python", "mcp_server/main_stdio.py"],
       "env": {
-        "PYTHONPATH": "/absolute/path/to/libraryMCP"
+        "PYTHONPATH": "/absolute/path/to/libraryMCP",
+        "ADMIN_USERNAME": "admin",
+        "ADMIN_PASSWORD": "your-password"
       }
     }
   }
@@ -144,6 +180,9 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
 | `check_fines` | Get total outstanding fines for a member |
 
 ## API Endpoints Overview
+
+### Authentication
+- `POST /auth/token` — Obtain a JWT Bearer token (form fields: `username`, `password`).
 
 ### Books
 - `GET /books/` — List books with optional filters.

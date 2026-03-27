@@ -9,9 +9,65 @@
       "key": "baseUrl",
       "value": "http://127.0.0.1:8000",
       "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "description": "Obtain a JWT bearer token. Submit credentials as form data (username + password). Default credentials: admin / secret (override via ADMIN_USERNAME / ADMIN_PASSWORD env vars).",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "secret",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "token"]
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "Books",
       "item": [
@@ -19,7 +75,7 @@
           "name": "List Books",
           "request": {
             "method": "GET",
-            "description": "List all books with optional filters.",
+            "description": "List all books with optional filters.\n\n- **title**: Filter books by title (Optional[str])\n- **author**: Filter books by author (Optional[str])\n- **genre**: Filter books by genre (Optional[str])\n- **available_only**: If True, only return books with available_copies > 0 (bool)",
             "url": {
               "raw": "{{baseUrl}}/books/",
               "host": ["{{baseUrl}}"],
@@ -57,7 +113,7 @@
           "name": "Create Book",
           "request": {
             "method": "POST",
-            "description": "Add a new book to the catalog. Returns 409 if ISBN already exists.",
+            "description": "Add a new book to the catalog.\n\n- **book**: Book details for creation (BookCreate)\n\nReturns the created book with its assigned ID and available_copies set to total_copies.\nRaises 409 Error if a book with the same ISBN already exists.",
             "header": [
               {
                 "key": "Content-Type",
@@ -84,7 +140,7 @@
           "name": "Get Book",
           "request": {
             "method": "GET",
-            "description": "Retrieve a book by its ID.",
+            "description": "Retrieve a book by its ID.\n\n- **book_id**: The unique identifier of the book to retrieve (int)",
             "url": {
               "raw": "{{baseUrl}}/books/1",
               "host": ["{{baseUrl}}"],
@@ -96,7 +152,7 @@
           "name": "Update Book",
           "request": {
             "method": "PUT",
-            "description": "Update an existing book. All fields are optional.",
+            "description": "Update an existing book in the database by book_id.\n\n- **book_id**: The unique identifier of the book to update (int)\n- **book_update**: The fields to update (BookUpdate)",
             "header": [
               {
                 "key": "Content-Type",
@@ -123,7 +179,7 @@
           "name": "Delete Book",
           "request": {
             "method": "DELETE",
-            "description": "Delete a book. Returns 409 if the book has active loans.",
+            "description": "Delete a book from the database by book_id.\n\n- **book_id**: The unique identifier of the book to delete (int)",
             "url": {
               "raw": "{{baseUrl}}/books/1",
               "host": ["{{baseUrl}}"],
@@ -140,7 +196,7 @@
           "name": "List Members",
           "request": {
             "method": "GET",
-            "description": "List all members with optional filters. Returns basic info without loan history.",
+            "description": "List all members with optional filters\n\n- **skip**: Number of records to skip for pagination\n- **limit**: Maximum number of records to return (1-500)\n- **name**: Filter by member name (case-insensitive partial match)\n- **email**: Filter by email address (case-insensitive partial match)\n- **is_active**: Filter by active status (true/false)\n\nNote: This endpoint returns basic member info without loan history for performance.\nUse GET /members/{id} to get detailed information with loans and fines.",
             "url": {
               "raw": "{{baseUrl}}/members/",
               "host": ["{{baseUrl}}"],
@@ -184,7 +240,7 @@
           "name": "Register Member",
           "request": {
             "method": "POST",
-            "description": "Create a new library member.",
+            "description": "Creates a new member\n\n- **name**: The name of the member.\n- **email**: The email address of the member (must be valid format).\n- **joined_date**: The date the member joined. Defaults to today's date.\n- **is_active**: Whether the member is active. Defaults to True.",
             "header": [
               {
                 "key": "Content-Type",
@@ -211,7 +267,7 @@
           "name": "Get Member",
           "request": {
             "method": "GET",
-            "description": "Get a member by ID with full loan history and outstanding fines.",
+            "description": "Returns a member by ID with complete loan history and fines\n\n- **member_id**: The unique identifier of the member to retrieve.\n\nReturns:\n- Member profile\n- All loans (active and historical)\n- Active loans count\n- Total outstanding fines",
             "url": {
               "raw": "{{baseUrl}}/members/1",
               "host": ["{{baseUrl}}"],
@@ -223,7 +279,7 @@
           "name": "Update Member",
           "request": {
             "method": "PUT",
-            "description": "Update member info. Cannot deactivate a member with active loans.",
+            "description": "Update member information\n\n- **member_id**: The unique identifier of the member to update.\n- **name**: New name (optional)\n- **email**: New email (optional, must be valid and unique)\n- **is_active**: New active status (optional)\n\nBusiness rules:\n- Cannot deactivate member with active loans\n- Email must be unique if changed",
             "header": [
               {
                 "key": "Content-Type",
@@ -250,7 +306,7 @@
           "name": "Delete Member",
           "request": {
             "method": "DELETE",
-            "description": "Delete a member. Cannot delete if they have active loans or unpaid fines.",
+            "description": "Deletes a member by ID\n\n- **member_id**: The unique identifier of the member to delete.\n\nBusiness rules:\n- Cannot delete member with active loans\n- Cannot delete member with unpaid fines",
             "url": {
               "raw": "{{baseUrl}}/members/1",
               "host": ["{{baseUrl}}"],
@@ -267,7 +323,7 @@
           "name": "Borrow Book",
           "request": {
             "method": "POST",
-            "description": "Create a loan record. Book must have available copies; member must be active and not already borrowing the same book.",
+            "description": "Borrow a book (creates a loan record).\n\n- **book_id**: The ID of the book to borrow\n- **member_id**: The ID of the member borrowing the book\n\nBusiness rules:\n- Book must exist and have available copies > 0\n- Member must exist and be active\n- Member cannot borrow the same book twice simultaneously",
             "header": [
               {
                 "key": "Content-Type",
@@ -294,7 +350,7 @@
           "name": "Return Book",
           "request": {
             "method": "POST",
-            "description": "Return a borrowed book. Calculates fine if overdue ($0.50/day).",
+            "description": "Return a borrowed book.\n\n- **book_id**: The ID of the book being returned\n- **member_id**: The ID of the member returning the book\n\nBusiness rules:\n- Loan must exist and be active (not already returned)\n- Fine is calculated if book is overdue ($0.50 per day)\n- Book's available_copies is incremented",
             "header": [
               {
                 "key": "Content-Type",
@@ -321,7 +377,7 @@
           "name": "Get Active Loans",
           "request": {
             "method": "GET",
-            "description": "Get all active (not yet returned) loans for a member.",
+            "description": "Get all active loans for a member.\n\n- **member_id**: The ID of the member\n\nReturns only loans where returned_date is NULL (active loans).",
             "url": {
               "raw": "{{baseUrl}}/loans/1",
               "host": ["{{baseUrl}}"],
@@ -333,7 +389,7 @@
           "name": "Check Fines",
           "request": {
             "method": "GET",
-            "description": "Calculate total outstanding fines for a member. Includes overdue active loans ($0.50/day) and unpaid fines from returned books.",
+            "description": "Calculate overdue fines for a member.\n\n- **member_id**: The ID of the member\n\nReturns:\n- **member_id**: The member's ID\n- **total_fines**: Total outstanding fines (includes overdue active loans and unpaid fines from returned books)\n- **active_overdue_loans**: Number of currently overdue active loans\n- **unpaid_returned_fines**: Total fines from returned books that haven't been paid\n\nFine calculation:\n- $0.50 per day overdue for active loans\n- Includes fine_amount from returned books (if not paid)",
             "url": {
               "raw": "{{baseUrl}}/loans/1/fines",
               "host": ["{{baseUrl}}"],

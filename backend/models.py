@@ -1,11 +1,8 @@
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional
 from sqlalchemy import Date, ForeignKey
 from datetime import date, timedelta
-
-
-class Base(DeclarativeBase):
-    pass
+from backend.database import Base
 
 
 class Book(Base):

@@ -1,7 +1,12 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
+"""
+Database configuration and session management.
+"""
+
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./library.db")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -12,11 +17,17 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
+    """
+    Base class for SQLAlchemy declarative models.
+    """
     pass
 
 
 # Dependency for FastAPI routes
 def get_db():
+    """
+    Yields a database session to be used in FastAPI dependencies.
+    """
     db = SessionLocal()
     try:
         yield db

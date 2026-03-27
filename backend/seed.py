@@ -1,5 +1,5 @@
-from database import SessionLocal, engine
-from models import Book, Member, Loan, Base
+from backend.database import SessionLocal, engine
+from backend.models import Book, Member, Loan, Base
 from datetime import date, timedelta
 
 

@@ -6,11 +6,38 @@ import os
 from typing import Optional
 
 import httpx
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
+load_dotenv()
+
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "secret")
 
 mcp = FastMCP()
+
+_token: Optional[str] = None
+
+
+def _fetch_token() -> str:
+    response = httpx.post(
+        f"{BACKEND_URL}/auth/token",
+        data={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD},
+    )
+    response.raise_for_status()
+    return response.json()["access_token"]
+
+
+def _request(method: str, url: str, **kwargs) -> httpx.Response:
+    global _token
+    if _token is None:
+        _token = _fetch_token()
+    response = httpx.request(method, url, headers={"Authorization": f"Bearer {_token}"}, **kwargs)
+    if response.status_code == 401:
+        _token = _fetch_token()
+        response = httpx.request(method, url, headers={"Authorization": f"Bearer {_token}"}, **kwargs)
+    return response
 
 
 @mcp.tool(name="search_books",
@@ -34,7 +61,7 @@ def search_books(
     if genre:
         params["genre"] = genre
 
-    response = httpx.get(f"{BACKEND_URL}/books/", params=params)
+    response = _request("GET", f"{BACKEND_URL}/books/", params=params)
     response.raise_for_status()
     books = response.json()
 
@@ -57,7 +84,7 @@ def get_book(book_id: int) -> str:
     """
     Retrieves full details of a single book by its ID.
     """
-    response = httpx.get(f"{BACKEND_URL}/books/{book_id}")
+    response = _request("GET", f"{BACKEND_URL}/books/{book_id}")
     if response.status_code == 404:
         return f"Book with ID {book_id} not found."
     response.raise_for_status()
@@ -95,7 +122,7 @@ def add_book(
     if genre:
         payload["genre"] = genre
 
-    response = httpx.post(f"{BACKEND_URL}/books/", json=payload)
+    response = _request("POST", f"{BACKEND_URL}/books/", json=payload)
     if response.status_code == 409:
         return f"A book with ISBN {isbn} already exists."
     response.raise_for_status()
@@ -139,7 +166,7 @@ def update_book(
     if not payload:
         return "No fields provided to update."
 
-    response = httpx.put(f"{BACKEND_URL}/books/{book_id}", json=payload)
+    response = _request("PUT", f"{BACKEND_URL}/books/{book_id}", json=payload)
     if response.status_code == 404:
         return f"Book with ID {book_id} not found."
     if response.status_code == 409:
@@ -160,7 +187,7 @@ def delete_book(book_id: int) -> str:
     """
     Removes a book from the catalog by book ID. Fails if the book has active loans.
     """
-    response = httpx.delete(f"{BACKEND_URL}/books/{book_id}")
+    response = _request("DELETE", f"{BACKEND_URL}/books/{book_id}")
     if response.status_code == 404:
         return f"Book with ID {book_id} not found."
     if response.status_code == 400:
@@ -187,7 +214,7 @@ def list_members(
     if is_active is not None:
         params["is_active"] = is_active
 
-    response = httpx.get(f"{BACKEND_URL}/members/", params=params)
+    response = _request("GET", f"{BACKEND_URL}/members/", params=params)
     response.raise_for_status()
     members = response.json()
 
@@ -210,7 +237,7 @@ def register_member(name: str, email: str) -> str:
     Registers a new library member with a name and email address. Email must be unique.
     """
     payload = {"name": name, "email": email}
-    response = httpx.post(f"{BACKEND_URL}/members/", json=payload)
+    response = _request("POST", f"{BACKEND_URL}/members/", json=payload)
     if response.status_code == 409:
         return f"A member with email {email} already exists."
     if response.status_code == 422:
@@ -231,7 +258,7 @@ def get_member(member_id: int) -> str:
     """
     Retrieves a member's profile, loan history, and outstanding fines by member ID.
     """
-    response = httpx.get(f"{BACKEND_URL}/members/{member_id}")
+    response = _request("GET", f"{BACKEND_URL}/members/{member_id}")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
     response.raise_for_status()
@@ -269,7 +296,7 @@ def delete_member(member_id: int) -> str:
     """
     Deletes a member account by member ID. Fails if the member has active loans or unpaid fines.
     """
-    response = httpx.delete(f"{BACKEND_URL}/members/{member_id}")
+    response = _request("DELETE", f"{BACKEND_URL}/members/{member_id}")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
     if response.status_code == 400:
@@ -287,7 +314,7 @@ def borrow_book(member_id: int, book_id: int) -> str:
     Fails if the book has no available copies or the member already has an active loan for it.
     """
     payload = {"member_id": member_id, "book_id": book_id}
-    response = httpx.post(f"{BACKEND_URL}/loans/borrow", json=payload)
+    response = _request("POST", f"{BACKEND_URL}/loans/borrow", json=payload)
     if response.status_code == 404:
         return f"Not found: {response.json().get('detail', 'member or book not found')}"
     if response.status_code == 400:
@@ -312,7 +339,7 @@ def return_book(member_id: int, book_id: int) -> str:
     Fails if no active loan exists for the member and book.
     """
     payload = {"member_id": member_id, "book_id": book_id}
-    response = httpx.post(f"{BACKEND_URL}/loans/return", json=payload)
+    response = _request("POST", f"{BACKEND_URL}/loans/return", json=payload)
     if response.status_code == 400:
         return f"Cannot return: {response.json().get('detail', 'no active loan found')}"
     response.raise_for_status()
@@ -332,7 +359,7 @@ def get_loans(member_id: int) -> str:
     """
     Lists all active (not yet returned) loans for a member by member ID.
     """
-    response = httpx.get(f"{BACKEND_URL}/loans/{member_id}")
+    response = _request("GET", f"{BACKEND_URL}/loans/{member_id}")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
     response.raise_for_status()
@@ -357,7 +384,7 @@ def check_fines(member_id: int) -> str:
     """
     Returns the total outstanding fines for a member, including overdue active loans and unpaid fines from returned books.
     """
-    response = httpx.get(f"{BACKEND_URL}/loans/{member_id}/fines")
+    response = _request("GET", f"{BACKEND_URL}/loans/{member_id}/fines")
     if response.status_code == 404:
         return f"Member with ID {member_id} not found."
     response.raise_for_status()

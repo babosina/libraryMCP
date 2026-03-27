@@ -25,7 +25,6 @@ def list_books(
     - **author**: Filter books by author (Optional[str])
     - **genre**: Filter books by genre (Optional[str])
     - **available_only**: If True, only return books with available_copies > 0 (bool)
-    - **db**: Database session (Session)
     """
     return crud.get_books(db, title=title, author=author, genre=genre, available_only=available_only)
 
@@ -36,7 +35,6 @@ def get_book(book_id: int, db: Session = Depends(get_db)):
     Retrieve a book by its ID.
 
     - **book_id**: The unique identifier of the book to retrieve (int)
-    - **db**: Database session (Session)
     """
     book = crud.get_book(db, book_id)
     if not book:
@@ -50,7 +48,6 @@ def create_book(book: BookCreate, db: Session = Depends(get_db)):
     Add a new book to the catalog.
 
     - **book**: Book details for creation (BookCreate)
-    - **db**: Database session (Session)
 
     Returns the created book with its assigned ID and available_copies set to total_copies.
     Raises 409 Error if a book with the same ISBN already exists.
@@ -71,7 +68,6 @@ def update_book(book_id: int, book_update: BookUpdate, db: Session = Depends(get
 
     - **book_id**: The unique identifier of the book to update (int)
     - **book_update**: The fields to update (BookUpdate)
-    - **db**: Database session (Session)
     """
     book = crud.get_book(db, book_id)
     if not book:
@@ -89,7 +85,6 @@ def delete_book(book_id: int, db: Session = Depends(get_db)):
     Delete a book from the database by book_id.
 
     - **book_id**: The unique identifier of the book to delete (int)
-    - **db**: Database session (Session)
     """
     book = crud.get_book(db, book_id)
     if not book:

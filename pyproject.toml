@@ -13,6 +13,8 @@ dependencies = [
     "mcp[cli]>=1.26.0",
     "httpx>=0.28.1",
     "pytest-httpx>=0.35.0",
+    "python-jose[cryptography]>=3.5.0",
+    "bcrypt>=5.0.0",
 ]
 
 [tool.pytest.ini_options]

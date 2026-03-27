@@ -5,14 +5,61 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/auth/token": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Obtain a JWT bearer token.\n\nSubmit credentials as form data (username + password).\nDefault credentials: admin / secret (override via ADMIN_USERNAME / ADMIN_PASSWORD env vars).",
+        "operationId": "login_auth_token_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_auth_token_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/books/": {
       "get": {
         "tags": [
           "Books"
         ],
         "summary": "List Books",
-        "description": "List all books with optional filters.\n\n- **title**: Filter books by title (Optional[str])\n- **author**: Filter books by author (Optional[str])\n- **genre**: Filter books by genre (Optional[str])\n- **available_only**: If True, only return books with available_copies \u003E 0 (bool)\n- **db**: Database session (Session)",
+        "description": "List all books with optional filters.\n\n- **title**: Filter books by title (Optional[str])\n- **author**: Filter books by author (Optional[str])\n- **genre**: Filter books by genre (Optional[str])\n- **available_only**: If True, only return books with available_copies \u003E 0 (bool)",
         "operationId": "list_books_books__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "title",
@@ -113,8 +160,13 @@
           "Books"
         ],
         "summary": "Create Book",
-        "description": "Add a new book to the catalog.\n\n- **book**: Book details for creation (BookCreate)\n- **db**: Database session (Session)\n\nReturns the created book with its assigned ID and available_copies set to total_copies.\nRaises 409 Error if a book with the same ISBN already exists.",
+        "description": "Add a new book to the catalog.\n\n- **book**: Book details for creation (BookCreate)\n\nReturns the created book with its assigned ID and available_copies set to total_copies.\nRaises 409 Error if a book with the same ISBN already exists.",
         "operationId": "create_book_books__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -155,8 +207,13 @@
           "Books"
         ],
         "summary": "Get Book",
-        "description": "Retrieve a book by its ID.\n\n- **book_id**: The unique identifier of the book to retrieve (int)\n- **db**: Database session (Session)",
+        "description": "Retrieve a book by its ID.\n\n- **book_id**: The unique identifier of the book to retrieve (int)",
         "operationId": "get_book_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -196,8 +253,13 @@
           "Books"
         ],
         "summary": "Update Book",
-        "description": "Update an existing book in the database by book_id.\n\n- **book_id**: The unique identifier of the book to update (int)\n- **book_update**: The fields to update (BookUpdate)\n- **db**: Database session (Session)",
+        "description": "Update an existing book in the database by book_id.\n\n- **book_id**: The unique identifier of the book to update (int)\n- **book_update**: The fields to update (BookUpdate)",
         "operationId": "update_book_books__book_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -247,8 +309,13 @@
           "Books"
         ],
         "summary": "Delete Book",
-        "description": "Delete a book from the database by book_id.\n\n- **book_id**: The unique identifier of the book to delete (int)\n- **db**: Database session (Session)",
+        "description": "Delete a book from the database by book_id.\n\n- **book_id**: The unique identifier of the book to delete (int)",
         "operationId": "delete_book_books__book_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -292,6 +359,11 @@
         "summary": "List Members",
         "description": "List all members with optional filters\n\n- **skip**: Number of records to skip for pagination\n- **limit**: Maximum number of records to return (1-500)\n- **name**: Filter by member name (case-insensitive partial match)\n- **email**: Filter by email address (case-insensitive partial match)\n- **is_active**: Filter by active status (true/false)\n\nNote: This endpoint returns basic member info without loan history for performance.\nUse GET /members/{id} to get detailed information with loans and fines.",
         "operationId": "list_members_members__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "skip",
@@ -409,6 +481,11 @@
         "summary": "Register Member",
         "description": "Creates a new member\n\n- **name**: The name of the member.\n- **email**: The email address of the member (must be valid format).\n- **joined_date**: The date the member joined. Defaults to today's date.\n- **is_active**: Whether the member is active. Defaults to True.",
         "operationId": "register_member_members__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -451,6 +528,11 @@
         "summary": "Get Member",
         "description": "Returns a member by ID with complete loan history and fines\n\n- **member_id**: The unique identifier of the member to retrieve.\n\nReturns:\n- Member profile\n- All loans (active and historical)\n- Active loans count\n- Total outstanding fines",
         "operationId": "get_member_members__member_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "member_id",
@@ -492,6 +574,11 @@
         "summary": "Update Member",
         "description": "Update member information\n\n- **member_id**: The unique identifier of the member to update.\n- **name**: New name (optional)\n- **email**: New email (optional, must be valid and unique)\n- **is_active**: New active status (optional)\n\nBusiness rules:\n- Cannot deactivate member with active loans\n- Email must be unique if changed",
         "operationId": "update_member_members__member_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "member_id",
@@ -543,6 +630,11 @@
         "summary": "Delete Member",
         "description": "Deletes a member by ID\n\n- **member_id**: The unique identifier of the member to delete.\n\nBusiness rules:\n- Cannot delete member with active loans\n- Cannot delete member with unpaid fines",
         "operationId": "delete_member_members__member_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "member_id",
@@ -617,7 +709,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/loans/return": {
@@ -659,7 +756,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/loans/{member_id}": {
@@ -670,6 +772,11 @@
         "summary": "Get Loans",
         "description": "Get all active loans for a member.\n\n- **member_id**: The ID of the member\n\nReturns only loans where returned_date is NULL (active loans).",
         "operationId": "get_loans_loans__member_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "member_id",
@@ -717,6 +824,11 @@
         "summary": "Check Fines",
         "description": "Calculate overdue fines for a member.\n\n- **member_id**: The ID of the member\n\nReturns:\n- **member_id**: The member's ID\n- **total_fines**: Total outstanding fines (includes overdue active loans and unpaid fines from returned books)\n- **active_overdue_loans**: Number of currently overdue active loans\n- **unpaid_returned_fines**: Total fines from returned books that haven't been paid\n\nFine calculation:\n- $0.50 per day overdue for active loans\n- Includes fine_amount from returned books (if not paid)",
         "operationId": "check_fines_loans__member_id__fines_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "member_id",
@@ -757,6 +869,65 @@
   },
   "components": {
     "schemas": {
+      "Body_login_auth_token_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^password$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "title": "Password"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": ""
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_auth_token_post"
+      },
       "BookCreate": {
         "properties": {
           "title": {
@@ -1184,6 +1355,24 @@
         "title": "MemberUpdate",
         "description": "Schema for updating an existing Member."
       },
+      "Token": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type"
+        ],
+        "title": "Token"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1223,6 +1412,19 @@
           "type"
         ],
         "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {
+
+            },
+            "tokenUrl": "/auth/token"
+          }
+        }
       }
     }
   }

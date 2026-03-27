@@ -5,3 +5,4 @@ library.db
 *__pycache__
 .DS_Store
 .env
+.mcp.json

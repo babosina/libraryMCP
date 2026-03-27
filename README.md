@@ -1,5 +1,7 @@
 # LibraryMCP
 
+> **Demo project** — This API has no authentication or authorization and is intended for local development and learning purposes only. Do not expose it to the public internet or use it to store real data.
+
 LibraryMCP is a FastAPI-based backend server designed to serve as a Model Context Protocol (MCP) tool invocation source for library management. It provides a set of API endpoints to manage books, members, and loans in a library system.
 
 ## Features

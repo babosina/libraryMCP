@@ -46,12 +46,12 @@ def register_member(member: MemberCreate, db: Session = Depends(get_db)):
     - **is_active**: Whether the member is active. Defaults to True.
     """
     if crud.get_member_by_email(db, member.email):
-        raise HTTPException(status_code=409, detail=f"Member with email {member.email} already exists")
+        raise HTTPException(status_code=409, detail="A member with that email already exists")
     try:
         return crud.create_member(db, member)
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=409, detail="A member with that email already exists")
 
 
 @router.get("/{member_id}", response_model=MemberResponse)
@@ -118,13 +118,13 @@ def update_member(
 
     if member_update.email and member_update.email != member.email:
         if crud.get_member_by_email(db, member_update.email):
-            raise HTTPException(status_code=409, detail=f"Member with email {member_update.email} already exists")
+            raise HTTPException(status_code=409, detail="A member with that email already exists")
 
     try:
         return crud.update_member(db, member, member_update.model_dump(exclude_unset=True))
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=409, detail="A member with that email already exists")
 
 
 @router.delete("/{member_id}", status_code=status.HTTP_200_OK)
@@ -159,6 +159,6 @@ def delete_member(member_id: int, db: Session = Depends(get_db)):
     try:
         crud.delete_member(db, member)
         return {"message": "Member deleted successfully", "member_id": member_id}
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=409, detail="Cannot delete member due to existing references")

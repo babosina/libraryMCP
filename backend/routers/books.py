@@ -59,9 +59,9 @@ def create_book(book: BookCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail=f"Book with ISBN {book.isbn} already exists")
     try:
         return crud.create_book(db, book)
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Book already exists")
 
 
 @router.put("/{book_id}", response_model=BookResponse, status_code=status.HTTP_200_OK)
@@ -78,9 +78,9 @@ def update_book(book_id: int, book_update: BookUpdate, db: Session = Depends(get
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     try:
         return crud.update_book(db, book, book_update.model_dump(exclude_unset=True))
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Update failed due to a conflict")
 
 
 @router.delete("/{book_id}", status_code=status.HTTP_200_OK)
@@ -101,6 +101,6 @@ def delete_book(book_id: int, db: Session = Depends(get_db)):
     try:
         crud.delete_book(db, book)
         return {"message": "Book deleted successfully"}
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Database constraint violation. {e}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot delete book due to existing references")
